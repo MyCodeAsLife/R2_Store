@@ -14,8 +14,8 @@ namespace R2_Store
 
             Shop shop = new Shop(warehouse);
 
-            warehouse.Delive(iPhone12, 10);
-            warehouse.Delive(iPhone11, 1);
+            warehouse.Add(iPhone12, 10);
+            warehouse.Add(iPhone11, 1);
 
             //Вывод всех товаров на складе с их остатком
             warehouse.ShowAllGoods();
@@ -47,49 +47,37 @@ namespace R2_Store
 
     abstract class Storage
     {
-        private List<Good> _goods = new List<Good>();
-        private List<int> _quantityGoods = new List<int>();
+        private Dictionary<Good, int> _goods = new Dictionary<Good, int>();
 
-        public IReadOnlyList<Good> Goods => _goods;
-        public IReadOnlyList<int> QuantityGoods => _quantityGoods;
+        public IReadOnlyDictionary<Good, int> Goods => _goods;
 
         public virtual void Add(Good good, int amount)
         {
             bool isAvailable = false;
 
-            for (int i = 0; i < _goods.Count; i++)
+            foreach (var item in _goods)
             {
-                if (_goods[i].Name == good.Name)
+                if (item.Key.Name == good.Name)
                 {
-                    _quantityGoods[i] += amount;
+                    _goods[item.Key] += amount;
                     isAvailable = true;
                 }
             }
 
             if (isAvailable == false)
-            {
-                _goods.Add(good);
-                _quantityGoods.Add(amount);
-            }
-        }
-
-        private void RemoveAt(int index)
-        {
-            _goods.RemoveAt(index);
-            _quantityGoods.RemoveAt(index);
-
+                _goods.Add(good, amount);
         }
 
         public bool TryRequestProduct(Good good, int amount)
         {
-            for (int i = 0; i < _goods.Count; i++)
+            foreach (var item in _goods)
             {
-                if (_goods[i].Name == good.Name && _quantityGoods[i] >= amount)
+                if (item.Key.Name == good.Name && _goods[item.Key] >= amount)
                 {
-                    _quantityGoods[i] -= amount;
+                    _goods[item.Key] -= amount;
 
-                    if (_quantityGoods[i] == 0)
-                        RemoveAt(i);
+                    if (_goods[item.Key] == 0)
+                        _goods.Remove(item.Key);
 
                     return true;
                 }
@@ -100,16 +88,16 @@ namespace R2_Store
 
         public virtual void ShowAllGoods()
         {
-            for (int i = 0; i < _goods.Count; i++)
-                Console.WriteLine($"Наименование: {_goods[i].Name}\tКоличество: {_quantityGoods[i]}");
+            foreach (var item in _goods)
+                Console.WriteLine($"Наименование: {item.Key.Name}\tКоличество: {item.Value}");
         }
     }
 
     class Warehouse : Storage
     {
-        public void Delive(Good good, int amount)
+        public override void Add(Good good, int amount)
         {
-            Add(good, amount);
+            base.Add(good, amount);
         }
     }
 
@@ -136,8 +124,8 @@ namespace R2_Store
         {
             int price = 0;
 
-            for (int i = 0; i < Goods.Count; i++)
-                price += (Goods[i].Price * QuantityGoods[i]);
+            foreach (var item in Goods)
+                price += (item.Key.Price * item.Value);
 
             return price;
         }
