@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace R2_Store
 {
@@ -49,35 +50,26 @@ namespace R2_Store
     {
         private Dictionary<Good, int> _goods = new Dictionary<Good, int>();
 
-        public IReadOnlyDictionary<Good, int> Goods => _goods;
+        protected IReadOnlyDictionary<Good, int> Goods => _goods;
 
         public virtual void Add(Good good, int amount)
         {
-            bool isAvailable = false;
-
-            foreach (var item in _goods)
-            {
-                if (item.Key.Name == good.Name)
-                {
-                    _goods[item.Key] += amount;
-                    isAvailable = true;
-                }
-            }
-
-            if (isAvailable == false)
+            if (_goods.ContainsKey(good))
+                _goods[good] += amount;
+            else
                 _goods.Add(good, amount);
         }
 
         public bool TryRequestProduct(Good good, int amount)
         {
-            foreach (var item in _goods)
+            if (_goods.ContainsKey(good))
             {
-                if (item.Key.Name == good.Name && _goods[item.Key] >= amount)
+                if (_goods[good] >= amount)
                 {
-                    _goods[item.Key] -= amount;
+                    _goods[good] -= amount;
 
-                    if (_goods[item.Key] == 0)
-                        _goods.Remove(item.Key);
+                    if (_goods[good] == 0)
+                        _goods.Remove(good);
 
                     return true;
                 }
@@ -88,8 +80,12 @@ namespace R2_Store
 
         public virtual void ShowAllGoods()
         {
+            StringBuilder info = new StringBuilder();
+
             foreach (var item in _goods)
-                Console.WriteLine($"Наименование: {item.Key.Name}\tКоличество: {item.Value}");
+                info.Append($"Наименование: {item.Key.Name}\tКоличество: {item.Value}\n");
+
+            Console.WriteLine(info);
         }
     }
 
@@ -117,7 +113,7 @@ namespace R2_Store
             if (_warehouse.TryRequestProduct(good, amount))
                 base.Add(good, amount);
             else
-                ShowError();
+                throw new Exception("На складе нет указанного товара или его недостаточно.");
         }
 
         private int OrderPrice()
@@ -128,11 +124,6 @@ namespace R2_Store
                 price += (item.Key.Price * item.Value);
 
             return price;
-        }
-
-        private void ShowError()
-        {
-            Console.WriteLine("На складе нет указанного товара или его недостаточно.");
         }
     }
 
