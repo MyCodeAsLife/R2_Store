@@ -49,7 +49,12 @@ namespace R2_Store
         public Cart GetCart() => new Cart(_warehouse);
     }
 
-    abstract class Storage
+    interface IStorage
+    {
+        bool TryRequestProduct(Good good, int amount);
+    }
+
+    abstract class Storage : IStorage
     {
         private Dictionary<Good, int> _goods = new Dictionary<Good, int>();
 
@@ -119,9 +124,9 @@ namespace R2_Store
 
     class Cart : Storage
     {
-        private Warehouse _warehouse;
+        private IStorage _warehouse;
 
-        public Cart(Warehouse warehouse)
+        public Cart(IStorage warehouse)
         {
             _warehouse = warehouse;
         }
