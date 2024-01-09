@@ -21,14 +21,14 @@ namespace R2_Store
             //Вывод всех товаров на складе с их остатком
             warehouse.ShowAllGoods();
 
-            Cart cart = shop.Cart();
+            Cart cart = shop.GetCart();
             cart.Add(iPhone12, 4);
             cart.Add(iPhone11, 3); //при такой ситуации возникает ошибка так, как нет нужного количества товара на складе
 
             //Вывод всех товаров в корзине
             cart.ShowAllGoods();
 
-            Console.WriteLine(cart.Order().Paylink);
+            Console.WriteLine(cart.GetOrder().Paylink);
 
             cart.Add(iPhone12, 9); //Ошибка, после заказа со склада убираются заказанные товары
         }
@@ -40,10 +40,13 @@ namespace R2_Store
 
         public Shop(Warehouse warehouse)
         {
-            _warehouse = warehouse;
+            if (warehouse == null)
+                throw new ArgumentNullException(nameof(warehouse));
+            else
+                _warehouse = warehouse;
         }
 
-        public Cart Cart() => new Cart(_warehouse);
+        public Cart GetCart() => new Cart(_warehouse);
     }
 
     abstract class Storage
@@ -54,28 +57,42 @@ namespace R2_Store
 
         public virtual void Add(Good good, int amount)
         {
-            if (_goods.ContainsKey(good))
-                _goods[good] += amount;
+            if (good == null)
+            {
+                throw new ArgumentNullException(nameof(good));
+            }
             else
-                _goods.Add(good, amount);
+            {
+                if (_goods.ContainsKey(good))
+                    _goods[good] += amount;
+                else
+                    _goods.Add(good, amount);
+            }
         }
 
         public bool TryRequestProduct(Good good, int amount)
         {
-            if (_goods.ContainsKey(good))
+            if (good == null)
             {
-                if (_goods[good] >= amount)
-                {
-                    _goods[good] -= amount;
-
-                    if (_goods[good] == 0)
-                        _goods.Remove(good);
-
-                    return true;
-                }
+                throw new ArgumentNullException(nameof(good));
             }
+            else
+            {
+                if (_goods.ContainsKey(good))
+                {
+                    if (_goods[good] >= amount)
+                    {
+                        _goods[good] -= amount;
 
-            return false;
+                        if (_goods[good] == 0)
+                            _goods.Remove(good);
+
+                        return true;
+                    }
+                }
+
+                return false;
+            }
         }
 
         public virtual void ShowAllGoods()
@@ -93,7 +110,10 @@ namespace R2_Store
     {
         public override void Add(Good good, int amount)
         {
-            base.Add(good, amount);
+            if (good == null)
+                throw new ArgumentNullException(nameof(good));
+            else
+                base.Add(good, amount);
         }
     }
 
@@ -106,17 +126,24 @@ namespace R2_Store
             _warehouse = warehouse;
         }
 
-        public Order Order() => new Order(OrderPrice());
+        public Order GetOrder() => new Order(CalculateOrderPrice());
 
         public override void Add(Good good, int amount)
         {
-            if (_warehouse.TryRequestProduct(good, amount))
-                base.Add(good, amount);
+            if (good == null)
+            {
+                throw new ArgumentNullException(nameof(good));
+            }
             else
-                throw new Exception("На складе нет указанного товара или его недостаточно.");
+            {
+                if (_warehouse.TryRequestProduct(good, amount))
+                    base.Add(good, amount);
+                else
+                    throw new Exception("На складе нет указанного товара или его недостаточно.");
+            }
         }
 
-        private int OrderPrice()
+        private int CalculateOrderPrice()
         {
             int price = 0;
 
